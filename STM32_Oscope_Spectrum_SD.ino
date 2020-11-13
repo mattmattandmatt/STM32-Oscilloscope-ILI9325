@@ -1,18 +1,18 @@
 /*
  * STM32 Digital Oscilloscope
- * using the STM32F103C8 MCU and the NT35702 2.4 inch TFT display 
+ * using the STM32F103C8 MCU and the ILI932x 3 inch TFT display 
  * https://www.gameinstance.com/post/80/STM32-Oscilloscope-with-FFT-and-SD-export
  * 
- *  GameInstance.com
+ *  GameInstance.com & forked out by mattmattandmatt
  *  2016-2018
  */
-#include <Adafruit_ILI9341_8bit_STM.h>
-#include <Adafruit_GFX.h>
+#include "Adafruit_ILI9325_8bit_STM.h"
+#include <Adafruit_GFX.h> // use an old version, like 1.7.0     v1.3.2 = 2018-11-09
 #include <SPI.h>
-#include "SdFat.h"
+//#include "SdFat.h" // ver 1.0.7 maybe   2018-08-10     https://www.arduinolibraries.info/libraries
 
 #include <table_fft.h>
-#include <cr4_fft_stm32.h>
+#include <cr4_fft_stm32.h> // https://github.com/Beherith/STM32_Spectrometer
 
 static const uint8_t SD_CHIP_SELECT = PB12;
 static const uint8_t TIME_BUTTON = PA15;
@@ -22,14 +22,15 @@ static const uint8_t TEST_SIGNAL = PA8;
 static const uint8_t CHANNEL_1 = PB0;
 static const uint8_t CHANNEL_2 = PB1;
 
-static const uint16_t BLACK   = 0x0000;
-static const uint16_t BLUE    = 0x001F;
-static const uint16_t RED     = 0xF800;
-static const uint16_t GREEN   = 0x07E0;
-static const uint16_t CYAN    = 0x07FF;
-static const uint16_t MAGENTA = 0xF81F;
-static const uint16_t YELLOW  = 0xFFE0;
-static const uint16_t WHITE   = 0xFFFF;
+static const uint16_t BLACK   = 0x0000; // 0x0000
+static const uint16_t BLUE    = 0x001F; // 0xF800
+static const uint16_t RED     = 0xF800; // 0x001F
+static const uint16_t GREEN   = 0x07E0; // 0x07E0
+static const uint16_t CYAN    = 0x07FF; // 0xFFE0
+static const uint16_t MAGENTA = 0xF81F; // 0xF81F
+static const uint16_t YELLOW  = 0xFFE0; // 0x07FF
+static const uint16_t WHITE   = 0xFFFF; // 0xFFFF
+static const uint16_t GREY    = 0x8410;
 
 static const uint16_t BACKGROUND_COLOR = BLUE;
 static const uint16_t DIV_LINE_COLOR = GREEN;
@@ -52,9 +53,9 @@ const uint8_t DT_SMPR[] = {0,       0,     0,     1,     2,     3,     4,     5,
 const float DT_FS[]     = {2571, 2571,  2571,  1800,  1384,   878,   667,   529,   429,   143,  71.4};
 const float DT_DIV[]    = {3.9,  7.81, 15.63, 22.73, 29.41, 45.45, 55.55, 83.33, 95.24, 293.3, 586.6};
 
-Adafruit_ILI9341_8bit_STM tft;
-SdFat sd(2);
-SdFile file;
+Adafruit_ILI9325_8bit_STM tft;
+//SdFat sd(2); // v1.0.8=overload v1.0.11=invalid conversion
+//SdFile file;
 
 uint8_t bk[SCREEN_HORIZONTAL_RESOLUTION];
 uint16_t data16[BUFFER_SIZE];
@@ -123,7 +124,7 @@ void setADCs() {
 
 void real_to_complex(uint16_t * in, uint32_t * out, int len) {
   //
-  for (int i = 0; i < len; i++) out[i] = in[i];// * 8;
+  for (int i = 0; i < len; i++) out[i] = in[i];
 }
 
 uint16_t asqrt(uint32_t x) { //good enough precision, 10x faster than regular sqrt
@@ -173,7 +174,7 @@ void adc_dma_enable(const adc_dev * dev) {
   bb_peri_set_bit(&dev->regs->CR2, ADC_CR2_DMA_BIT, 1);
 }
 // ------------------------------------------------------------------------------------
-
+/*
 void export_to_sd() {
   //
   tft.setCursor(170, 20);
@@ -249,7 +250,7 @@ void export_to_sd() {
   if (!file.open(s.c_str(), O_CREAT | O_WRITE | O_EXCL)) {
     //
     tft.fillRect(169, 19, 150, 9, BACKGROUND_COLOR);
-    tft.print("Can't data create file");
+    tft.print("Can't create data file");
     return;
   }
   file.println("Time series");
@@ -277,7 +278,7 @@ void export_to_sd() {
   if (!file.open(s.c_str(), O_CREAT | O_WRITE | O_EXCL)) {
     //
     tft.fillRect(169, 19, 150, 9, BACKGROUND_COLOR);
-    tft.print("Can't image create file");
+    tft.print("Can't create image file");
     return;
   }
   file.println("IMX");
@@ -321,10 +322,10 @@ void export_to_sd() {
   delay(2000);
   tft.fillRect(170, 19, 150, 9, BACKGROUND_COLOR);
 }
-
+*/
 void setup() {
-  // 
-  tft.begin();
+  //Serial.begin(9600);
+  tft.begin(); // 0x9341-red   0x9325-blue
   tft.setRotation(3);
 
   bPress[0] = false;
@@ -335,14 +336,18 @@ void setup() {
 }
 
 void loop() {
-  //
+
   if (state == 0) {
-    // 
-    tft.fillScreen(BACKGROUND_COLOR);
-    tft.setCursor(15, 100);
-    tft.setTextColor(YELLOW);
+    // Splash
+    tft.fillScreen(BLACK);
+    //tft.fillRect(20,0,180,50,YELLOW);
+    tft.setCursor(65, 100);
+    tft.setTextColor(BLUE);
     tft.setTextSize(3);
-    tft.println("GameInstance.com");
+    tft.println("Scope & FFT");
+    tft.setCursor(120, 130);
+    tft.setTextSize(2);
+    tft.println("B0 & B1");
 //    analogWrite(TEST_SIGNAL, 127);
     delay(1500);
     tft.fillScreen(BACKGROUND_COLOR);
@@ -385,6 +390,7 @@ void loop() {
       state = 3;
     }
   }
+  /**/
   if (state == 3) {
     // acquisition
 
@@ -397,7 +403,7 @@ void loop() {
     dma1_ch1_Active = 1;
     dma_enable(DMA1, DMA_CH1);                     // enable the DMA channel and start the transfer
 
-    while (dma1_ch1_Active) {};                     // waiting for the DMA to complete
+    while (dma1_ch1_Active) {};                    // waiting for the DMA to complete
     dma_disable(DMA1, DMA_CH1);                    // end of DMA trasfer
     
     real_to_complex(data16, data32, BUFFER_SIZE);  // data format conversion
@@ -405,6 +411,7 @@ void loop() {
 
     state = 4;
   }
+  
   if (state == 4) {
     // display signal screen
     if (bScreenChange) {
@@ -619,12 +626,12 @@ void loop() {
       tft.setCursor(215, 3);
       tft.setTextColor(BLACK);
       tft.setTextSize(1);
-      tft.print("GameInstance.com");
+      tft.print("  Scope & FFT");
     }
     if (freeze == 3) {
       //
       freeze = 1;
-      export_to_sd();
+      //export_to_sd();
       bScreenChange = true;
     }
   }
@@ -632,4 +639,3 @@ void loop() {
   delay(50);
   state = 1;
 }
-
