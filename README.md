@@ -1,5 +1,5 @@
-# STM32-Oscilloscope
-STM32 Digital Oscilloscope using the STM32F103C8 MCU and the NT35702 2.4 inch TFT display.
+# STM32-Oscilloscope - ILI9325 TFT - No SD
+STM32 Digital Oscilloscope using the STM32F103C8 MCU and the ILI9325 3 inch TFT display.
 
 Specifications:
 
@@ -8,7 +8,7 @@ Specifications:
 * Calculates minimum, maximum and average values
 * Spectrum FFT analysis
 * Fundamental frequency detection
-* SD card export of signal wave shape and spectrum
+* <strike>SD card export of signal wave shape and spectrum</strike>
 * Freeze function
 * Sampling rate selection
 
